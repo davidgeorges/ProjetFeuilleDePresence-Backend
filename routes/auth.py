@@ -85,21 +85,33 @@ async def logout():
     response.delete_cookie("refresh_token")
     return response
 
-@auth.post("/authStatus")
+@auth.get("/authStatus")
 async def auth_status(request : Request):
 
+    db = database.get_db()
+
     #Init status code & content
-    status_code = 500
+    status_code = 401
     detail = { "message" : "" }
 
-    #Get the refresh_token from cookies
-    refresh_token = request.cookies["refresh_token"]
-    
-    #Check if is not expired
-    if(token.check_if_is_expired(refresh_token, "refresh") == "OK"):
-        print(request)
-    else:
-        detail["message"] = "Error refresh_token expired."
+    try : 
+        #Get the refresh_token from cookies
+        refresh_token = request.cookies["refresh_token"]
+        try :
+            #If we have an user with the refresh_token
+            user_from_db = await db["users"].find_one({"refresh_token":refresh_token.replace("Bearer ","")})
+            #Get the user role as a string
+            user_role = userRoleAsString(user_from_db["role_id"])
+            #Check if is not expired
+            if(token.check_if_is_expired(refresh_token, "refresh") == "OK"):
+                return JSONResponse(content={"message" :"User already connected.","id":user_from_db["_id"], "role" : user_role},status_code=status.HTTP_200_OK)
+            else:
+                detail["message"] = "Error refresh_token expired."
+        except :
+            detail["message"] = "Error no user with this refresh_token in the database."
+    except : 
+        detail["message"] =  "No access - Missing refresh_token."
+
 
     try :
         error.write_in_file(detail["message"])
@@ -115,31 +127,34 @@ async def refresh_token(request : Request):
     status_code = 500
     detail = { "message" : "" }
     
-  
-    refresh_token = request.cookies["refresh_token"]
     try : 
-        #Get user from the db
-        user_from_db = await db["users"].find_one({"refresh_token" : refresh_token.replace("Bearer ", "")},{"email", "role_id"})
-        #If user exist
-        if user_from_db is not None:
-            #Check if the refresh token is valid
-            if(token.check_if_is_expired(refresh_token, "refresh") == "OK"):
-                #Get the user role as a string
-                user_role = userRoleAsString(user_from_db["role_id"])
-                #Create the access token
-                access_token = "Bearer " +token.create_token(user_from_db["_id"], user_role, "access")
-                response = JSONResponse(content={"message": "Refresh token success.", "id":user_from_db["_id"],"role": user_role},status_code=status.HTTP_200_OK)
-                response.set_cookie(key="access_token",value=access_token,httponly=True)
-                return response
+        #Get the refresh_token from cookies
+        refresh_token = request.cookies["refresh_token"]
+        try : 
+            #Get user from the db
+            user_from_db = await db["users"].find_one({"refresh_token" : refresh_token.replace("Bearer ", "")},{"email", "role_id"})
+            #If user exist
+            if user_from_db is not None:
+                #Check if the refresh token is valid
+                if(token.check_if_is_expired(refresh_token, "refresh") == "OK"):
+                    #Get the user role as a string
+                    user_role = userRoleAsString(user_from_db["role_id"])
+                    #Create the access token
+                    access_token = "Bearer " +token.create_token(user_from_db["_id"], user_role, "access")
+                    response = JSONResponse(content={"message": "Refresh token success.", "id":user_from_db["_id"],"role": user_role},status_code=status.HTTP_200_OK)
+                    response.set_cookie(key="access_token",value=access_token,httponly=True)
+                    return response
+                else:
+                    #Invalid refresh token
+                    status_code = 401
+                    detail["message"] = "Error - " + token.get_token_error()
             else:
-                #Invalid refresh token
                 status_code = 401
-                detail["message"] = "Error - " + token.get_token_error()
-        else:
-            status_code = 401
-            detail["message"] = "Error - No user with this refresh token"
-    except Exception as e:
-        detail["message"] = " Error while convert pydantic to dict --> "+str(e)
+                detail["message"] = "Error - No user with this refresh token"
+        except Exception as e:
+            detail["message"] = " Error while convert pydantic to dict --> "+str(e)
+    except : 
+        detail["message"] =  "No access - Missing refresh_token."
 
     try:
         error.write_in_file(detail["message"])

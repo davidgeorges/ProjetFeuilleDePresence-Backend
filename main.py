@@ -44,10 +44,8 @@ async def token_filter(request: Request,call_next):
                     #If we have any role from token
                     if user_role is not None : 
                         #Admin can access all routes
-                        if user_role == "admin" :
-                            return await call_next(request)
                         #Check if the user has the role to access the resource
-                        if user_role in  request_splited :
+                        if user_role in  request_splited or user_role == "admin" :
                             #Access to the initial request
                             return await call_next(request)
                         else :
