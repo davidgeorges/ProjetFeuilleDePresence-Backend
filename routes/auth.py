@@ -28,13 +28,12 @@ def userRoleAsString(value):
 @auth.post("/login")
 async def login(user_receive: UserIn = Body(...)):
 
-    print(user_receive)
-
     db = database.get_db()
 
     #Init status code & content
     status_code = 500
-    detail = { "message" : "" }
+    detail = "Internval error, please retry."
+    errorMessage = ""
 
     try :
         #Convert pydantic model to a Dict
@@ -60,27 +59,29 @@ async def login(user_receive: UserIn = Body(...)):
                         response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
                         return response
                     except Exception as e :
-                        detail["message"] = "Error while inserting token in db --> "+str(e)
+                        errorMessage = f"Error while inserting token in db for user with id : {user_from_db['_id']} --> {str(e)}"
                 except Exception as e :
-                    detail["message"] = "Error while creating token --> "+str(e)
+                    errorMessage = f"Error while creating token in db for user with id : {user_from_db['_id']} --> {str(e)}"
             else:   
                 status_code = 401
-                detail["message"] = "Wrong credentials."
+                detail = "Wrong credentials."
+                errorMessage = f"Error wrong credentials for user with id : {user_from_db['_id']}"
         else :
             status_code = 400
-            detail["message"] = "User doesn't exist, please contact an admin."
+            detail = "User doesn't exist, please contact an admin."
+            errorMessage = f"Error user trying to connect with non existing account, email used : {user_receive['email']}"
     except Exception as e : 
-        detail["message"] =  "Error while convert pydantic to dict --> "+str(e)
+        errorMessage = f"Error while convert pydantic to dict --> {str(e)}"
 
     try :
-        error.write_in_file(detail["message"])
+        error.write_in_file(errorMessage)
     except Exception as e : 
         print("Error while trying to write in file --> "+str(e))
     return JSONResponse(detail, status_code)
 
 @auth.post("/logout")
 async def logout():
-    response = JSONResponse(content={"message" :"User disconnected with success."},status_code=status.HTTP_200_OK)
+    response = JSONResponse("User disconnected with success.",status.HTTP_200_OK)
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return response
@@ -92,29 +93,33 @@ async def auth_status(request : Request):
 
     #Init status code & content
     status_code = 401
-    detail = { "message" : "" }
+    detail = ""
+    errorMessage = ""
 
     try : 
         #Get the refresh_token from cookies
         refresh_token = request.cookies["refresh_token"]
         try :
             #If we have an user with the refresh_token
-            user_from_db = await db["users"].find_one({"refresh_token":refresh_token.replace("Bearer ","")})
+            user_from_db = await db["users"].find_one({"refresh_token":refresh_token.replace("Bearer ","")},{"email", "role_id"})
             #Get the user role as a string
             user_role = userRoleAsString(user_from_db["role_id"])
             #Check if is not expired
             if(token.check_if_is_expired(refresh_token, "refresh") == "OK"):
                 return JSONResponse(content={"message" :"User already connected.","id":user_from_db["_id"], "role" : user_role},status_code=status.HTTP_200_OK)
             else:
-                detail["message"] = "Error refresh_token expired."
+                detail = "Error refresh_token expired."
+                errorMessage = "Error an user tried to reconnect with an expired refresh_token."
         except :
-            detail["message"] = "Error no user with this refresh_token in the database."
-    except : 
-        detail["message"] =  "No access - Missing refresh_token."
+            detail = "Error no user with this refresh_token in the database."
+            errorMessage = "Error an user tried to reconnect with an non existing refresh_token."
+    except :
+        detail =  "No access - Missing refresh_token."
+        errorMessage =  "Error an user tried to reconnect without  refresh_token."
 
 
     try :
-        error.write_in_file(detail["message"])
+        error.write_in_file(errorMessage)
     except Exception as e : 
         print("Error while trying to write in file --> "+str(e))
     return JSONResponse(detail, status_code)
@@ -123,9 +128,11 @@ async def auth_status(request : Request):
 async def refresh_token(request : Request):
 
     db = database.get_db()
+
     #Init status code & content
-    status_code = 500
-    detail = { "message" : "" }
+    status_code = 401
+    detail = "Internval error, please retry."
+    errorMessage = ""
     
     try : 
         #Get the refresh_token from cookies
@@ -146,18 +153,20 @@ async def refresh_token(request : Request):
                     return response
                 else:
                     #Invalid refresh token
-                    status_code = 401
-                    detail["message"] = "Error - " + token.get_token_error()
+                    detail = "Error refresh_token expired."
+                    errorMessage = "Error an user tried to reconnect with an expired refresh_token."
             else:
-                status_code = 401
-                detail["message"] = "Error - No user with this refresh token"
+                detail = "Error no user with this refresh_token in the database."
+                errorMessage = "Error an user tried to reconnect with an non existing refresh_token."
         except Exception as e:
-            detail["message"] = " Error while convert pydantic to dict --> "+str(e)
-    except : 
-        detail["message"] =  "No access - Missing refresh_token."
+            status_code = 500
+            errorMessage = f"Error while convert pydantic to dict --> {str(e)}"
+    except :
+        detail =  "No access - Missing refresh_token."
+        errorMessage =  "No access - Missing refresh_token."
 
     try:
-        error.write_in_file(detail["message"])
+        error.write_in_file(errorMessage)
     except Exception as e : 
         print("Error while trying to write in file --> "+str(e))
     return JSONResponse(detail, status_code)

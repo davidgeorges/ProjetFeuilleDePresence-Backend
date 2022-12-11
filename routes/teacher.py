@@ -42,10 +42,10 @@ async def get_all_data_from_promo(request: Request):
     #Get the access_token from cookies
     access_token = request.cookies["access_token"]
     
-    #Get the user role
+    #Get the user id
     teacher_id = token.get_data("id",access_token,"access")
 
-    #If we have any role from token
+    #If we have any id from token
     if teacher_id is not None : 
         try : 
             #Get the teacher from is id
@@ -68,16 +68,34 @@ async def get_all_data_from_promo(request: Request):
                         else : 
                             return JSONResponse("No user in this promo.", status.HTTP_204_NO_CONTENT)
                     except Exception as e :
-                        detail["message"] =  f"Error while getting all student data from db - student_list --> {promo_from_db['student_list']} --> "+str(e)
+                        detail =  f"Error while getting all student data from db - student_list --> {promo_from_db['student_list']} --> "+str(e)
                 else :
                     status_code = 400
-                    detail["message"]= f"Promo not in db for --> {promo_from_db['promo_name']} - for --> {teacher_id}"
+                    detail = f"Promo not in db for --> {promo_from_db['promo_name']} - for --> {teacher_id}"
             except Exception as e :
-                detail["message"] = f"Error while getting promo from db - promo_id --> {teacher_from_db['promo_id']} --> "+str(e)
+                detail = f"Error while getting promo from db - promo_id --> {teacher_from_db['promo_id']} --> "+str(e)
         except Exception as e :
-            detail["message"] =  f"Error while getting teacher from db - teacher_id --> {teacher_id} --> "+str(e)
+            detail =  f"Error while getting teacher from db - teacher_id --> {teacher_id} --> "+str(e)
     else : 
-        detail["message"] =  "No access - teacher_id is none."
+        detail =  "No access - teacher_id is none."
+
+    try :
+        error.write_in_file(detail["message"])
+    except Exception as e : 
+        print("Error while trying to write in file --> "+str(e))
+    return JSONResponse(detail, status_code)
+
+
+#Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
+@teacher.get("/downloadWeeklySummary")
+async def download_weekly_summary(request: Request):
+
+    db = database.get_db()
+
+    #Init status code & content
+    status_code = 500
+    detail = " "
+
 
     try :
         error.write_in_file(detail["message"])

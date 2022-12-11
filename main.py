@@ -20,7 +20,7 @@ async def token_filter(request: Request,call_next):
 
     #Init status code & content
     status_code = 401
-    detail = { "message" : "" } 
+    errorMessage = ""
     
     #Get the url path as an array
     request_splited = request.url.path.split("/")
@@ -46,29 +46,33 @@ async def token_filter(request: Request,call_next):
                         #Admin can access all routes
                         #Check if the user has the role to access the resource
                         if user_role in  request_splited or user_role == "admin" :
-                            #Access to the initial request
-                            return await call_next(request)
+                            try :
+                                #Access to the initial request
+                                return await call_next(request)
+                            except Exception as e:
+                                status_code = 500
+                                errorMessage =  "Error with the route."
                         else :
                             status_code = 403
-                            detail["message"] = "No access - Missing rights."
+                            errorMessage = "No access - Missing rights."
                     else:
                         status_code = 500
-                        detail["message"] =  "Error while getting user role."
+                        errorMessage =  "Error while getting user role."
                 else:
-                    detail["message"] = "Error access_token expired."
+                    errorMessage = "Error access_token expired."
             except :
-                detail["message"] =  "No access - Missing access_token."
+                errorMessage =  "No access - Missing access_token."
         else:
-            detail["message"] = "Error refresh_token expired."
+            errorMessage = "Error refresh_token expired."
     except :
-        detail["message"] =  "No access - Missing refresh_token."
+        errorMessage =  "No access - Missing refresh_token."
         
 
     try :
-        error.write_in_file(detail["message"])
+        error.write_in_file(errorMessage)
     except Exception as e : 
         print("Error while trying to write in file --> "+str(e))
-    return JSONResponse(detail, status_code)
+    return JSONResponse(errorMessage, status_code)
 
 
 
