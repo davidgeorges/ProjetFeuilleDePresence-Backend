@@ -10,3 +10,4 @@ routes/__pycache__
 test/__pycache__
 local.env
 database/__pycache__
+pdf/*

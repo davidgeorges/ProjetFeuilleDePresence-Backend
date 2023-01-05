@@ -42,7 +42,7 @@ async def set_student_status(dailyToken : str,request: Request):
             try : 
                 #Get the student from is id
                 student_from_db = await db["users"].find_one({"_id" : student_id},{"promo_id","status"})
-                todayDateAndMonth = str(datetime.today().day)+"-"+str(datetime.today().month)
+                todayDateAndMonth = datetime.today().strftime("%d-%m")
                 #Check if the user has not already justified his presence
                 if todayDateAndMonth not in student_from_db["status"].keys() : 
                     try : 
