@@ -125,7 +125,6 @@ async def download_weekly_summary(date : str,request: Request):
             pdf.setDate(date)
             pdf.createPdf(student_tuple)
             return FileResponse("./pdf/"+pdf.getFileName(), status.HTTP_200_OK,media_type='application/pdf')
-
         except Exception as e :
                 detail =  f"Error while getting teacher from db - teacher_id --> {teacher_id} --> "+str(e)
     else : 
@@ -153,21 +152,25 @@ async def get_all_promo(date : str,request: Request):
     #Get the user id
     teacher_id = token.get_data("id",access_token,"access")
 
-    #If we have any id from token
-    if teacher_id is not None : 
-        try : 
-            #Get teacher promo id
-            teacher = await db["users"].find_one({"_id" : teacher_id},{"promo_id"})
-            #Get all user of the promo with the status of the day
-            status_list = []
-            async for x in db["users"].find({"promo_id" : teacher["promo_id"],"role_id" : "1"},{f"status.{date}","email","last_name","first_name"}):
-                status_list.append(x)
-            return JSONResponse(status_list, status.HTTP_200_OK)
-        except Exception as e :
-            detail =  f"Error while getting teacher from db - teacher_id --> {teacher_id} --> "+str(e)
+    if datetime.now().weekday() != 5 | datetime.now().weekday() != 6 :
+        #If we have any id from token
+        if teacher_id is not None : 
+            try : 
+                #Get teacher promo id
+                teacher = await db["users"].find_one({"_id" : teacher_id},{"promo_id"})
+                #Get all user of the promo with the status of the day
+                status_list = []
+                async for x in db["users"].find({"promo_id" : teacher["promo_id"],"role_id" : "1"},{f"status.{date}","email","last_name","first_name"}):
+                    print(x)
+                    status_list.append(x)
+                return JSONResponse(status_list, status.HTTP_200_OK)
+            except Exception as e :
+                detail =  f"Error while getting teacher from db - teacher_id --> {teacher_id} --> "+str(e)
+        else : 
+            detail =  "No access - teacher_id is none."
     else : 
-        detail =  "No access - teacher_id is none."
-   
+            detail =  "You cannot get promo on weekends."
+    
 
     try :
         error.write_in_file(detail["message"])
@@ -180,9 +183,13 @@ async def get_all_promo(date : str,request: Request):
 async def get_weekday():
 
     list_of_weekday = []
-    for i in range(datetime.now().weekday()+1) :
-        list_of_weekday.append(date_for_weekday(i).strftime("%d-%m"))
-    return JSONResponse(list_of_weekday, status.HTTP_200_OK)
+    detail = ""
+    if datetime.now().weekday() != 5 | datetime.now().weekday() != 6 :
+        for i in range(datetime.now().weekday()+1) :
+            list_of_weekday.append(date_for_weekday(i).strftime("%d-%m"))
+    else : 
+        detail = "You cannot access this view on weekends."
+    return JSONResponse({"payload" : list_of_weekday,"message" : detail}, status.HTTP_200_OK)
 
 @teacher.get("/getPromoName")
 async def get_weekday(request: Request):
