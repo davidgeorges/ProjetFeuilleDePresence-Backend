@@ -42,6 +42,9 @@ async def login(user_receive: UserIn = Body(...)):
             raise HTTPException(401, "Wrong credentials.")
             
         user_role = userRoleAsString(user_from_db["role_id"])
+        if user_role is None : 
+            raise HTTPException(500)
+
         access_token = "Bearer "+token.create_token(user_from_db["_id"],user_role,"access")
         refresh_token = token.create_token(user_from_db["_id"],user_role,"refresh")
         await db["users"].update_one({"_id":user_from_db["_id"]},{"$set":{"refresh_token":refresh_token}})
@@ -81,6 +84,8 @@ async def auth_status(request : Request):
 
         #Get the user role as a string
         user_role = userRoleAsString(user_from_db["role_id"])
+        if user_role is None : 
+            raise HTTPException(500)
 
         #Check if is not expired
         if(token.check_if_is_expired(refresh_token, "refresh") != "OK"):
@@ -116,6 +121,8 @@ async def refresh_token(request : Request):
                     
         #Get the user role as a string
         user_role = userRoleAsString(user_from_db["role_id"])
+        if user_role is None : 
+            raise HTTPException(500)
 
         #Create the access token
         access_token = "Bearer " +token.create_token(user_from_db["_id"], user_role, "access")
