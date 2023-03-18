@@ -26,22 +26,22 @@ async def set_student_status(dailyToken: str, request: Request):
 
     student_id = token.get_data("id", access_token, "access")
     if not student_id:
-    return JSONResponse("Invalid access token", status.HTTP_401_UNAUTHORIZED)
+        return JSONResponse("Invalid access token", status.HTTP_401_UNAUTHORIZED)
 
     student = await db["users"].find_one({"_id": student_id}, {"promo_id", "status"})
     if not student:
-    return JSONResponse("Student not found", status.HTTP_404_NOT_FOUND)
+        return JSONResponse("Student not found", status.HTTP_404_NOT_FOUND)
 
     today = datetime.today().strftime("%d-%m")
     if today in student["status"]:
-    return JSONResponse("You have already declared your presence.", status.HTTP_400_BAD_REQUEST)
+        return JSONResponse("You have already declared your presence.", status.HTTP_400_BAD_REQUEST)
 
     promo = await db["promo"].find_one({"_id": student["promo_id"]}, {"daily_token"})
     if not promo:
-    return JSONResponse("Promo not found", status.HTTP_404_NOT_FOUND)
+        return JSONResponse("Promo not found", status.HTTP_404_NOT_FOUND)
 
     if promo["daily_token"] != dailyToken:
-    return JSONResponse("Invalid daily token", status.HTTP_400_BAD_REQUEST)
+        return JSONResponse("Invalid daily token", status.HTTP_400_BAD_REQUEST)
 
     status_updated = {today: "present", **student["status"]}
     await db["users"].update_one({"_id": student_id}, {"$set": {"status": status_updated}})

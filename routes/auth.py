@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Request,status
+from fastapi import APIRouter, Body, HTTPException, Request,status
 from fastapi.responses import JSONResponse
 from config.hashPassword import verify_password
 from classes.Database import database
@@ -49,7 +49,7 @@ async def login(user_receive: UserIn = Body(...)):
         refresh_token = token.create_token(user_from_db["_id"],user_role,"refresh")
         await db["users"].update_one({"_id":user_from_db["_id"]},{"$set":{"refresh_token":refresh_token}})
         refresh_token = "Bearer "+refresh_token
-        response = JSONResponse(content={"message" :"User connected with success.","id":user_from_db["_id"], "role" : user_role},status.HTTP_200_OK)
+        response = JSONResponse(content={"message" :"User connected with success.","id":user_from_db["_id"], "role" : user_role},status_code=status.HTTP_200_OK)
         response.set_cookie(key="access_token",value=access_token,httponly=True)
         response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
         return response
@@ -91,7 +91,7 @@ async def auth_status(request : Request):
         if(token.check_if_is_expired(refresh_token, "refresh") != "OK"):
             raise HTTPException(401,"Error refresh_token expired.")
 
-        return JSONResponse(content={"message" :"User already connected.","id":user_from_db["_id"], "role" : user_role},status.HTTP_200_OK)
+        return JSONResponse(content={"message" :"User already connected.","id":user_from_db["_id"], "role" : user_role},status_code=status.HTTP_200_OK)
 
     except Exception as error :
         error.write_in_file(error)
@@ -126,7 +126,7 @@ async def refresh_token(request : Request):
 
         #Create the access token
         access_token = "Bearer " +token.create_token(user_from_db["_id"], user_role, "access")
-        response = JSONResponse(content={"message": "Refresh token success.", "id":user_from_db["_id"],"role": user_role},status.HTTP_200_OK)
+        response = JSONResponse(content={"message": "Refresh token success.", "id":user_from_db["_id"],"role": user_role},status_code=status.HTTP_200_OK)
         response.set_cookie(key="access_token",value=access_token,httponly=True)
             
         return response
