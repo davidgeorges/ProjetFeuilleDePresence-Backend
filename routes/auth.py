@@ -75,6 +75,10 @@ async def auth_status(request : Request):
         #If we have an user with the refresh_token
         user_from_db = await db["users"].find_one({"refresh_token":refresh_token.replace("Bearer ","")},{"email", "role_id"})
 
+        #If user don't exist
+        if user_from_db is None:
+            raise HTTPException(400,"Error no user with this refresh_token in the database.")
+
         #Get the user role as a string
         user_role = userRoleAsString(user_from_db["role_id"])
 
