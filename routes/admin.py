@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Body
+from fastapi import APIRouter, status, Body
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from models.promo import PromoInDb
@@ -7,7 +7,7 @@ from models.user import UserInDB
 from config.hashPassword import get_password_hash
 from config.generatePassword import generate_password
 from classes.Database import database
-from classes.Error import error
+from classes.Error import error as errorLogger
 
 """
 File containing admin routes.
@@ -28,10 +28,10 @@ async def create_an_user(user_receive: UserInDB = Body(...)):
         promo = await db["promo"].find_one({"_id": user["promo_id"]})
 
         if promo is None:
-            raise HTTPException(200, f"Promo doesn't exist --> {user['promo_id']} - for --> {user['email']}")
+            return JSONResponse(content=f"Promo doesn't exist --> {user['promo_id']} - for --> {user['email']}",status_code=status.HTTP_200_OK)
 
         if await db["users"].find_one({"email": user["email"]}) is not None:
-            raise HTTPException(200, f"User already in db for --> {user['email']} for promo --> {promo['promo_name']}")
+            return JSONResponse(content=f"User already in db for --> {user['email']} for promo --> {promo['promo_name']}",status_code=status.HTTP_200_OK)
 
         password_generate = generate_password()
         user["hashed_password"] = get_password_hash(password_generate)
@@ -44,11 +44,11 @@ async def create_an_user(user_receive: UserInDB = Body(...)):
             promo["teacher_list"].append(user["_id"])
         await db["promo"].update_one({"_id": promo["_id"]}, {"$set": promo})
 
-        return JSONResponse("User registred with success.", status.HTTP_201_CREATED)
+        return JSONResponse(content="User registred with success.",status_code=status.HTTP_201_CREATED)
 
     except Exception as error :
-        error.write_in_file(str(error))
-        raise HTTPException(500)
+        errorLogger.write_in_file("createAnUser : "+str(error))
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -59,11 +59,11 @@ async def add_an_promo(promo_receive: PromoInDb = Body(...)):
         promo = jsonable_encoder(promo_receive)
         if not await database.get_db()["promo"].find_one({"promo_name": promo["promo_name"]}): 
             await database.get_db()["promo"].insert_one(promo)
-            return JSONResponse("Promo add with success.", status.HTTP_201_CREATED)
-        return JSONResponse(f"Promo already in db for --> {promo['promo_name']}", status.HTTP_200_OK)
+            return JSONResponse(content="Promo add with success.",status_code=status.HTTP_201_CREATED)
+        return JSONResponse(content=f"Promo already in db for --> {promo['promo_name']}",status_code=status.HTTP_200_OK)
     except Exception as error :
-        error.write_in_file(str(error))
-        raise HTTPException(status_code=500)
+        errorLogger.write_in_file("addAnPromo : "+str(error))
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

@@ -1,9 +1,9 @@
 from datetime import datetime,date, timedelta
-from fastapi import APIRouter, HTTPException, Request,status
+from fastapi import APIRouter, Request,status
 from fastapi.responses import JSONResponse
 from classes.Pdf import Pdf
 from classes.Database import database
-from classes.Error import error
+from classes.Error import error as errorLogger
 from classes.Token import token
 from fastapi.responses import FileResponse
 
@@ -25,7 +25,7 @@ async def get_all_student_data(student_list):
             student_data = await db["users"].find_one({"_id" : student_id},{"email","last_name","first_name","status"})
             all_student_data.append(student_data)
         except Exception as e : 
-            error.write_in_file(f"Error while getting student data from db --> {student_id} --> "+str(e))
+            errorLogger.write_in_file(f"Error while getting student data from db --> {student_id} --> "+str(e))
     return all_student_data
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
@@ -38,28 +38,28 @@ async def get_all_data_from_promo(request: Request):
 
     #If we have no id from token
     if teacher_id is None : 
-        raise HTTPException(500)
+        return JSONResponse(status.HTTP_500_INTERNAL_SERVER_ERROR)
     try : 
         #Get the teacher from is id
         teacher = await db["users"].find_one({"_id" : teacher_id},{"promo_id"})
         promo = await db["promo"].find_one({"_id": teacher["promo_id"]})
         #If promo don't exist
         if promo is None : 
-            raise HTTPException(400,f"Promo not in db for --> {promo['promo_name']} - for --> {teacher_id}") 
+            return JSONResponse(content=f"Promo not in db for --> {promo['promo_name']} - for --> {teacher_id}",status_code=status.HTTP_400_BAD_REQUEST) 
         #Get all student data in an array
         all_student_data = await get_all_student_data(promo["student_list"])
         #If we have no student
         if not all_student_data :
-            raise HTTPException(400,"No user in this promo.")
+            return JSONResponse(content="No user in this promo.",status_code=status.HTTP_400_BAD_REQUEST)
 
         response = {"payload_student_list": all_student_data}
         if teacher_id == promo["daily_teacher_id"]:
             response["payload_daily_token"] = promo["daily_token"]
 
-        return JSONResponse(response,200)
+        return JSONResponse(content=response, status_code=status.HTTP_200_OK)
     except Exception as error :
-            error.write_in_file(str(error))
-            raise HTTPException(500)
+            errorLogger.write_in_file("getMyPromo : "+str(error))
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
 @teacher.get("/download/summary/{date}")
@@ -72,7 +72,7 @@ async def download_weekly_summary(date : str,request: Request):
 
     #If we have no id from token
     if teacher_id is None :
-        raise HTTPException(500)
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     try :
         #Get teacher promo id
@@ -90,10 +90,10 @@ async def download_weekly_summary(date : str,request: Request):
         pdf.setTitle(promo["promo_name"].upper()+"-"+promo["promo_year"].upper())
         pdf.setDate(date)
         pdf.createPdf(student_tuple)
-        return FileResponse("./pdf/"+pdf.getFileName(), status.HTTP_200_OK,media_type='application/pdf')
+        return FileResponse(path="./pdf/"+pdf.getFileName(),status_code=status.HTTP_200_OK,media_type='application/pdf')
     except Exception as error :
-        error.write_in_file(str(error))
-        raise HTTPException(500)
+        errorLogger.write_in_file("downloadSummary : "+str(error))
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
 @teacher.get("/getAllPromo/{date}")
@@ -104,11 +104,11 @@ async def get_all_promo(date : str,request: Request):
     teacher_id = token.get_data("id",access_token,"access")
 
     if datetime.now().weekday() == 5 | datetime.now().weekday() == 6 :
-        raise HTTPException(400,"You cannot get promo on weekends.")
+        return JSONResponse(content="You cannot get promo on weekends.",status_code=status.HTTP_400_BAD_REQUEST)
 
     #If we have no id from token
     if teacher_id is None : 
-        raise HTTPException(500)
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     try : 
         #Get teacher promo id
@@ -117,10 +117,10 @@ async def get_all_promo(date : str,request: Request):
         status_list = []
         async for x in db["users"].find({"promo_id" : teacher["promo_id"],"role_id" : "1"},{f"status.{date}","email","last_name","first_name"}):
             status_list.append(x)
-        return JSONResponse(status_list, status.HTTP_200_OK)
+        return JSONResponse(content=status_list,status_code=status.HTTP_200_OK)
     except Exception as error :
-        error.write_in_file(str(error))
-        raise HTTPException(500)
+        errorLogger.write_in_file("getAllPromo : "+str(error))
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
 @teacher.get("/getWeekday")
@@ -133,7 +133,7 @@ async def get_weekday():
             list_of_weekday.append(date_for_weekday(i).strftime("%d-%m"))
     else : 
         detail = "You cannot access this view on weekends."
-    return JSONResponse({"payload" : list_of_weekday,"message" : detail}, status.HTTP_200_OK)
+    return JSONResponse(content={"payload" : list_of_weekday,"message" : detail},status_code=status.HTTP_200_OK)
 
 @teacher.get("/getPromoName")
 async def get_weekday(request: Request):
@@ -144,17 +144,17 @@ async def get_weekday(request: Request):
 
     #If we have any id from token
     if teacher_id is None : 
-        raise HTTPException(500)
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     try : 
         #Get the teacher from is id
         teacher = await db["users"].find_one({"_id" : teacher_id},{"promo_id"})
         #Get the promo linked to the teacher
         promo = await db["promo"].find_one({"_id": teacher["promo_id"]},{"promo_name","promo_year"})
-        return JSONResponse(promo["promo_name"].upper()+"-"+promo["promo_year"].upper(), status.HTTP_200_OK) 
+        return JSONResponse(content=promo["promo_name"].upper()+"-"+promo["promo_year"].upper(),status_code=status.HTTP_200_OK) 
     except Exception as error :
-        error.write_in_file(str(error))
-        raise HTTPException(500)
+        errorLogger.write_in_file("getPromoName : "+str(error))
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def date_for_weekday(day: int):
     today = date.today()
