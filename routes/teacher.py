@@ -72,7 +72,7 @@ async def download_weekly_summary(date : str,request: Request):
 
     #If we have no id from token
     if teacher_id is None :
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     try :
         #Get teacher promo id
@@ -93,7 +93,7 @@ async def download_weekly_summary(date : str,request: Request):
         return FileResponse(path="./pdf/"+pdf.getFileName(),status_code=status.HTTP_200_OK,media_type='application/pdf')
     except Exception as error :
         errorLogger.write_in_file("downloadSummary : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
 @teacher.get("/getAllPromo/{date}")
@@ -108,7 +108,7 @@ async def get_all_promo(date : str,request: Request):
 
     #If we have no id from token
     if teacher_id is None : 
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     try : 
         #Get teacher promo id
@@ -120,7 +120,7 @@ async def get_all_promo(date : str,request: Request):
         return JSONResponse(content=status_list,status_code=status.HTTP_200_OK)
     except Exception as error :
         errorLogger.write_in_file("getAllPromo : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
 @teacher.get("/getWeekday")
@@ -144,7 +144,7 @@ async def get_weekday(request: Request):
 
     #If we have any id from token
     if teacher_id is None : 
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     try : 
         #Get the teacher from is id
@@ -154,7 +154,7 @@ async def get_weekday(request: Request):
         return JSONResponse(content=promo["promo_name"].upper()+"-"+promo["promo_year"].upper(),status_code=status.HTTP_200_OK) 
     except Exception as error :
         errorLogger.write_in_file("getPromoName : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def date_for_weekday(day: int):
     today = date.today()

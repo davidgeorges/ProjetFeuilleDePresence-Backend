@@ -50,4 +50,4 @@ async def set_student_status(dailyToken: str, request: Request):
         return JSONResponse(content="Success",status_code=status.HTTP_201_CREATED)
     except Exception as error :
         errorLogger.write_in_file("setMyStatus : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

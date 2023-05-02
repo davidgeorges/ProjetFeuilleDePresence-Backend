@@ -85,7 +85,7 @@ async def auth_status(request : Request):
         #Get the user role as a string
         user_role = userRoleAsString(user_from_db["role_id"])
         if user_role is None : 
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         #Check if is not expired
         if(token.check_if_is_expired(refresh_token, "refresh") != "OK"):
@@ -95,7 +95,7 @@ async def auth_status(request : Request):
 
     except Exception as error :
         errorLogger.write_in_file("authStatus : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @auth.get("/refreshToken")
@@ -122,7 +122,7 @@ async def refresh_token(request : Request):
         #Get the user role as a string
         user_role = userRoleAsString(user_from_db["role_id"])
         if user_role is None : 
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         #Create the access token
         access_token = "Bearer " +token.create_token(user_from_db["_id"], user_role, "access")
@@ -133,6 +133,6 @@ async def refresh_token(request : Request):
 
     except Exception as error :
         errorLogger.write_in_file("refreshToken : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

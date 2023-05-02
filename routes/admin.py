@@ -63,7 +63,7 @@ async def add_an_promo(promo_receive: PromoInDb = Body(...)):
         return JSONResponse(content=f"Promo already in db for --> {promo['promo_name']}",status_code=status.HTTP_200_OK)
     except Exception as error :
         errorLogger.write_in_file("addAnPromo : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

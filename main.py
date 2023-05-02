@@ -53,7 +53,7 @@ async def token_filter(request: Request,call_next):
 
     except Exception as error :                   
         errorLogger.write_in_file(" middleware : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
