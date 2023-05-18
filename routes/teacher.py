@@ -38,7 +38,7 @@ async def get_all_data_from_promo(request: Request):
 
     #If we have no id from token
     if teacher_id is None : 
-        return JSONResponse(status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     try : 
         #Get the teacher from is id
         teacher = await db["users"].find_one({"_id" : teacher_id},{"promo_id"})
@@ -59,7 +59,7 @@ async def get_all_data_from_promo(request: Request):
         return JSONResponse(content=response, status_code=status.HTTP_200_OK)
     except Exception as error :
             errorLogger.write_in_file("getMyPromo : "+str(error))
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #Respond with an array containg all data of users of the promo AND an daily token if the teacher have access
 @teacher.get("/download/summary/{date}")

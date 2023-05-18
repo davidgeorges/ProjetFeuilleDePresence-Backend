@@ -48,7 +48,7 @@ async def create_an_user(user_receive: UserInDB = Body(...)):
 
     except Exception as error :
         errorLogger.write_in_file("createAnUser : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

@@ -43,25 +43,28 @@ async def login(user_receive: UserIn = Body(...)):
             
         user_role = userRoleAsString(user_from_db["role_id"])
         if user_role is None : 
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         access_token = "Bearer "+token.create_token(user_from_db["_id"],user_role,"access")
         refresh_token = token.create_token(user_from_db["_id"],user_role,"refresh")
         await db["users"].update_one({"_id":user_from_db["_id"]},{"$set":{"refresh_token":refresh_token}})
         refresh_token = "Bearer "+refresh_token
-        response = JSONResponse({"message" :"User connected with success.","id":user_from_db["_id"], "role" : user_role},status_code=status.HTTP_200_OK)
+        response = JSONResponse(content={"message" :"User connected with success.","id":user_from_db["_id"], "role" : user_role},status_code=status.HTTP_200_OK)
         response.set_cookie(key="access_token",value=access_token,httponly=True)
         response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
         return response
     
     except Exception as error : 
         errorLogger.write_in_file("login : "+str(error))
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @auth.post("/logout")
 async def logout():
-    return JSONResponse("User disconnected with success.", status.HTTP_200_OK).delete_cookie("access_token").delete_cookie("refresh_token")
+    response = JSONResponse(content="User disconnected with success.",status_code=status.HTTP_200_OK)
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return response
 
     
 
