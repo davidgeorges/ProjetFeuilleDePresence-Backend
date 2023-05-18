@@ -12,7 +12,7 @@ class Pdf(FPDF):
     __file_name = ""
 
     def header(self):
-        self.image("../Backend/images/CY-Cergy-Paris-logo.png", 15, 12.5, 40, 15)
+        self.image("./images/CY-Cergy-Paris-logo.png", 15, 12.5, 40, 15)
         self.set_font("helvetica", 'B', 16)
         self.cell(0, 20, self.title, 0, align="C")
         self.ln(30)

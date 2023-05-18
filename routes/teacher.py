@@ -81,7 +81,7 @@ async def download_weekly_summary(date : str,request: Request):
         promo = await db["promo"].find_one({"_id" : teacher["promo_id"]},{"promo_id","promo_name","promo_year"})
         #Get all user of the promo with the status of the day
         async for value in db["users"].find({"promo_id" : teacher["promo_id"],"role_id" : "1"},{"last_name","first_name",f"status.{date}","email"}):
-            student_status = value["status"][date] if value["status"] else "absent"
+            student_status = "present" if value["status"] else "absent"
             student_list.append((value["last_name"],value["first_name"],value["email"],student_status))
         #Convert list to tupple
         student_tuple = tuple(student_list)
@@ -115,8 +115,11 @@ async def get_all_promo(date : str,request: Request):
         teacher = await db["users"].find_one({"_id" : teacher_id},{"promo_id"})
         #Get all user of the promo with the status of the day
         status_list = []
-        async for x in db["users"].find({"promo_id" : teacher["promo_id"],"role_id" : "1"},{f"status.{date}","email","last_name","first_name"}):
-            status_list.append(x)
+        todayDate = datetime.now().strftime("%d-%m")
+        async for student in db["users"].find({"promo_id" : teacher["promo_id"],"role_id" : "1"},{f"status.{date}","email","last_name","first_name"}):
+            if(date < todayDate) :
+                student["status"] = {date : "present"} if student["status"] else {date : "absent"}
+            status_list.append(student)
         return JSONResponse(content=status_list,status_code=status.HTTP_200_OK)
     except Exception as error :
         errorLogger.write_in_file("getAllPromo : "+str(error))
@@ -127,13 +130,12 @@ async def get_all_promo(date : str,request: Request):
 async def get_weekday():
 
     list_of_weekday = []
-    detail = ""
     if datetime.now().weekday() != 5 | datetime.now().weekday() != 6 :
         for i in range(datetime.now().weekday()+1) :
             list_of_weekday.append(date_for_weekday(i).strftime("%d-%m"))
     else : 
-        detail = "You cannot access this view on weekends."
-    return JSONResponse(content={"payload" : list_of_weekday,"message" : detail},status_code=status.HTTP_200_OK)
+        list_of_weekday.append("weekends")
+    return JSONResponse(content=list_of_weekday,status_code=status.HTTP_200_OK)
 
 @teacher.get("/getPromoName")
 async def get_weekday(request: Request):
