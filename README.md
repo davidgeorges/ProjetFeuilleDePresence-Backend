@@ -10,7 +10,7 @@
 
 * ## Prof 
     * Première connexion : via l'adresse mail et le mot de passe reçu par mail.
-    * Peut visualiser la feuille de présence du jour.
+    * Peut visualiser les feuilles de présence de la semaine.
     * Recevra un token par jour à fournir aux élèves.
 ***
 
