@@ -23,6 +23,9 @@ async def set_student_status(dailyToken: str, request: Request):
 
     db = database.get_db()
 
+    if datetime.now().weekday() == 5 or datetime.now().weekday() == 6 :
+        return JSONResponse(content="You cannot set your status on weekends.",status_code=status.HTTP_400_BAD_REQUEST)
+
     access_token = request.cookies.get("access_token")
     try:
         student_id = token.get_data("id", access_token, "access")

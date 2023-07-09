@@ -35,7 +35,8 @@ async def create_an_user(user_receive: UserInDB = Body(...)):
 
         password_generate = generate_password()
         user["hashed_password"] = get_password_hash(password_generate)
-        await db["users"].insert_one(user)
+        
+        
         mail.send_login_info(user["email"], password_generate)
 
         if user["role_id"] == "1":
@@ -47,6 +48,8 @@ async def create_an_user(user_receive: UserInDB = Body(...)):
         return JSONResponse(content="User registred with success.",status_code=status.HTTP_201_CREATED)
 
     except Exception as error :
+        #To implement --> Delete user from database and list
+
         errorLogger.write_in_file("createAnUser : "+str(error))
         return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

@@ -70,6 +70,9 @@ async def download_weekly_summary(date : str,request: Request):
     teacher_id = token.get_data("id",access_token,"access")
     student_list = list()
 
+    if datetime.now().weekday() == 5 or datetime.now().weekday() == 6 :
+        return JSONResponse(content="You cannot get promo on weekends.",status_code=status.HTTP_400_BAD_REQUEST)
+
     #If we have no id from token
     if teacher_id is None :
         return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -103,12 +106,12 @@ async def get_all_promo(date : str,request: Request):
     access_token = request.cookies["access_token"]
     teacher_id = token.get_data("id",access_token,"access")
 
-    if datetime.now().weekday() == 5 | datetime.now().weekday() == 6 :
+    if datetime.now().weekday() == 5 or datetime.now().weekday() == 6 :
         return JSONResponse(content="You cannot get promo on weekends.",status_code=status.HTTP_400_BAD_REQUEST)
 
     #If we have no id from token
     if teacher_id is None : 
-        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(content="",status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)   
 
     try : 
         #Get teacher promo id
@@ -130,10 +133,10 @@ async def get_all_promo(date : str,request: Request):
 async def get_weekday():
 
     list_of_weekday = []
-    if datetime.now().weekday() != 5 | datetime.now().weekday() != 6 :
+    if datetime.now().weekday() < 5 :
         for i in range(datetime.now().weekday()+1) :
             list_of_weekday.append(date_for_weekday(i).strftime("%d-%m"))
-    else : 
+    else :
         list_of_weekday.append("weekends")
     return JSONResponse(content=list_of_weekday,status_code=status.HTTP_200_OK)
 
